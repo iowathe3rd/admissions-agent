@@ -59,17 +59,17 @@ async def run_ingest():
 
 def run_api():
     """Запускает API сервер."""
-    command = ["poetry", "run", "uvicorn", "src.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    command = ["python", "-m", "uvicorn", "src.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     return run_command(command, "API сервер")
 
 def run_bot():
     """Запускает Telegram бота."""
-    command = ["poetry", "run", "python", "-m", "src.bot.runner"]
+    command = ["python", "-m", "src.bot.runner"]
     return run_command(command, "Telegram бот")
 
 def run_tests():
     """Запускает тесты."""
-    command = ["poetry", "run", "pytest", "src/tests/", "-v"]
+    command = ["python", "-m", "pytest", "src/tests/", "-v"]
     return run_command(command, "Тесты")
 
 def check_environment():
@@ -115,7 +115,7 @@ async def run_full():
     
     # Запуск API в фоне
     api_process = subprocess.Popen(
-        ["poetry", "run", "uvicorn", "src.app.main:app", "--host", "0.0.0.0", "--port", "8000"],
+        ["python", "-m", "uvicorn", "src.app.main:app", "--host", "0.0.0.0", "--port", "8000"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     )
@@ -125,7 +125,7 @@ async def run_full():
     
     # Запуск бота
     bot_process = subprocess.Popen(
-        ["poetry", "run", "python", "-m", "src.bot.runner"],
+        ["python", "-m", "src.bot.runner"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     )
