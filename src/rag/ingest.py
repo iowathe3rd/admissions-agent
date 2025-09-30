@@ -82,12 +82,22 @@ async def ingest_data():
     logger.info("Начинаем индексацию данных...")
     
     # Проверяем, не проиндексированы ли уже данные
+    collection = None
     try:
+        collection = client.get_or_create_collection(name="admissions_docs")
         current_count = collection.count()
         if current_count > 0:
             logger.info(f"Коллекция уже содержит {current_count} документов. Очищаем...")
             # Удаляем существующую коллекцию и создаем новую
             client.delete_collection(name="admissions_docs")
+            collection = client.create_collection(name="admissions_docs")
+    except Exception as e:
+        logger.error(f"Ошибка работы с коллекцией: {e}")
+        collection = client.create_collection(name="admissions_docs")
+    
+    if not collection:
+        logger.error("Не удалось создать коллекцию")
+        return
             collection = client.get_or_create_collection(name="admissions_docs")
     except Exception as e:
         logger.warning(f"Ошибка при проверке коллекции: {e}")

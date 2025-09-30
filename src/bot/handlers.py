@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 @router.message(Command("start"))
 async def start_handler(message: Message):
     """Обработчик команды /start."""
-    user_name = message.from_user.first_name if message.from_user.first_name else "Абитуриент"
+    user_name = message.from_user.first_name if message.from_user and message.from_user.first_name else "Абитуриент"
     welcome_text = f"""
 👋 Здравствуйте, {user_name}!
 
@@ -323,7 +323,5 @@ async def back_to_menu_handler(callback: CallbackQuery):
     await callback.message.answer(
         "Выберите интересующий раздел:",
         reply_markup=main_menu_keyboard()
-    )
-    await callback.answer()
     )
     await callback.answer()

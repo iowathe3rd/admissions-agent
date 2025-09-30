@@ -33,23 +33,30 @@ def retrieve_context(query: str) -> List[RAGContext]:
             return []
 
         # 2. Запрашиваем коллекцию
-        results = collection.query(
-            query_embeddings=query_embedding,
-            n_results=settings.RAG_TOP_K,
-            include=["documents", "metadatas", "distances"]
-        )
+        try:
+            results = collection.query(
+                query_embeddings=query_embedding,
+                n_results=settings.RAG_TOP_K,
+                include=["documents", "metadatas", "distances"]
+            )
+        except Exception as e:
+            logger.error(f"Ошибка при запросе к ChromaDB: {e}")
+            return []
 
         # 3. Фильтруем и форматируем результаты
         contexts = []
-        if results and results["ids"][0]:
+        if results and results.get("ids") and results["ids"][0]:
             for i in range(len(results["ids"][0])):
-                distance = results["distances"][0][i]
+                distance = results["distances"][0][i] if results.get("distances") else 1.0
                 # Chroma использует косинусное расстояние, поэтому 1 - distance = косинусное сходство
                 similarity = 1 - distance
 
                 if similarity >= settings.RAG_RELEVANCE_THRESHOLD:
+                    metadata = results["metadatas"][0][i] if results.get("metadatas") else {}
+                    source = str(metadata.get("source", "unknown"))
+                    
                     contexts.append(RAGContext(
-                        source=results["metadatas"][0][i]["source"],
+                        source=source,
                         text=results["documents"][0][i],
                         score=similarity
                     ))

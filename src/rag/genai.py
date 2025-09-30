@@ -86,7 +86,14 @@ def embed_texts(texts: List[str], model: str = settings.GEMINI_EMBEDDING_MODEL) 
             logger.warning("Модель вернула пустые эмбеддинги")
             return []
             
-        embeddings = [e.values for e in r.embeddings]
+        embeddings = []
+        for e in r.embeddings:
+            if e and e.values:
+                embeddings.append(e.values)
+            else:
+                logger.warning("Получен пустой эмбеддинг")
+                embeddings.append([])
+        
         logger.info(f"Успешно получено {len(embeddings)} эмбеддингов")
         return embeddings
         
