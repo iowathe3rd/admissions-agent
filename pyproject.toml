@@ -23,6 +23,9 @@ aiosqlite = "^0.20.0"
 # Дополнительные зависимости для исправления ошибок
 numpy = "^1.24.0"
 typing-extensions = "^4.8.0"
+# Зависимости для обработки документов
+PyPDF2 = "^3.0.1"
+python-docx = "^1.1.0"
 pathlib = {version = "*", python = ">=3.4"}
 
 [tool.poetry.group.dev.dependencies]
