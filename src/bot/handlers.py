@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 async def safe_answer(callback: CallbackQuery, text: str, **kwargs):
     """Безопасная отправка ответа через callback."""
     if callback.message:
-        await callback.message.answer(text, **kwargs)
+        await safe_answer(callback, text, **kwargs)
 
 
 @router.message(Command("start"))
@@ -92,10 +92,15 @@ async def show_programs_handler(callback: CallbackQuery):
             else:
                 response_text = "🎓 **Наши программы:**\n\n"
                 for p in programs:
-                    cost = f"{p.cost:,} руб.".replace(",", " ") if p.cost else "бесплатно"
+                    # Правильная проверка для SQLAlchemy объектов
+                    cost_value = getattr(p, 'cost', None)
+                    cost = f"{cost_value:,} руб.".replace(",", " ") if cost_value else "бесплатно"
                     response_text += f"• **{p.name}** - {cost}\n"
-                    if p.description:
-                        response_text += f"  _{p.description}_\n\n"
+                    
+                    # Правильная проверка для description
+                    desc_value = getattr(p, 'description', None)
+                    if desc_value:
+                        response_text += f"  _{desc_value}_\n\n"
                     else:
                         response_text += "\n"
                 await safe_answer(callback, response_text, parse_mode="Markdown", reply_markup=back_to_menu_keyboard())
@@ -116,7 +121,7 @@ async def show_guide_handler(callback: CallbackQuery):
             result = await session.execute(select(models.Step).order_by(models.Step.step_number))
             steps = result.scalars().all()
             if not steps:
-                await callback.message.answer(
+                await safe_answer(callback, 
                     "Пошаговое руководство пока не добавлено.",
                     reply_markup=back_to_menu_keyboard()
                 )
@@ -127,10 +132,10 @@ async def show_guide_handler(callback: CallbackQuery):
                 
                 response_text += "💡 *Рекомендуем следовать шагам последовательно для успешного поступления.*"
                 
-                await callback.message.answer(response_text, reply_markup=back_to_menu_keyboard())
+                await safe_answer(callback, response_text, reply_markup=back_to_menu_keyboard())
     except Exception as e:
         logger.error(f"Ошибка при получении шагов: {e}")
-        await callback.message.answer(
+        await safe_answer(callback, 
             "Произошла ошибка при получении пошагового руководства. Попробуйте позже.",
             reply_markup=back_to_menu_keyboard()
         )
@@ -145,7 +150,7 @@ async def show_faq_handler(callback: CallbackQuery):
             result = await session.execute(select(models.FAQ).order_by(models.FAQ.id))
             faqs = result.scalars().all()
             if not faqs:
-                await callback.message.answer(
+                await safe_answer(callback, 
                     "Раздел FAQ пока пуст.",
                     reply_markup=back_to_menu_keyboard()
                 )
@@ -156,10 +161,10 @@ async def show_faq_handler(callback: CallbackQuery):
                 
                 response_text += "💬 *Если не нашли ответ на свой вопрос, задайте его мне напрямую!*"
                 
-                await callback.message.answer(response_text, reply_markup=back_to_menu_keyboard())
+                await safe_answer(callback, response_text, reply_markup=back_to_menu_keyboard())
     except Exception as e:
         logger.error(f"Ошибка при получении FAQ: {e}")
-        await callback.message.answer(
+        await safe_answer(callback, 
             "Произошла ошибка при получении FAQ. Попробуйте позже.",
             reply_markup=back_to_menu_keyboard()
         )
@@ -180,7 +185,7 @@ async def check_docs_handler(callback: CallbackQuery):
             optional_docs = result.scalars().all()
             
             if not required_docs:
-                await callback.message.answer(
+                await safe_answer(callback, 
                     "Список обязательных документов пока не определен.",
                     reply_markup=back_to_menu_keyboard()
                 )
@@ -199,10 +204,10 @@ async def check_docs_handler(callback: CallbackQuery):
                 response_text += "\n💡 *Убедитесь, что у вас готовы сканы всех документов в хорошем качестве.*"
                 response_text += "\n\n📧 *Документы можно подать через личный кабинет или принести лично в приёмную комиссию.*"
                 
-                await callback.message.answer(response_text, reply_markup=back_to_menu_keyboard())
+                await safe_answer(callback, response_text, reply_markup=back_to_menu_keyboard())
     except Exception as e:
         logger.error(f"Ошибка при получении документов: {e}")
-        await callback.message.answer(
+        await safe_answer(callback, 
             "Произошла ошибка при получении списка документов. Попробуйте позже.",
             reply_markup=back_to_menu_keyboard()
         )
@@ -298,7 +303,7 @@ async def show_contacts_handler(callback: CallbackQuery):
 📋 **Личный кабинет абитуриента:**
 https://cabinet.alt.university
 """
-    await callback.message.answer(contact_text, reply_markup=back_to_menu_keyboard())
+    await safe_answer(callback, contact_text, reply_markup=back_to_menu_keyboard())
     await callback.answer()
 
 
@@ -319,14 +324,14 @@ async def ask_question_handler(callback: CallbackQuery):
 
 💡 Постарайтесь формулировать вопросы конкретно - это поможет мне дать более точный ответ!
 """
-    await callback.message.answer(question_text, reply_markup=back_to_menu_keyboard())
+    await safe_answer(callback, question_text, reply_markup=back_to_menu_keyboard())
     await callback.answer()
 
 
 @router.callback_query(F.data == "back_to_menu")
 async def back_to_menu_handler(callback: CallbackQuery):
     """Обрабатывает возврат в главное меню."""
-    await callback.message.answer(
+    await safe_answer(callback, 
         "Выберите интересующий раздел:",
         reply_markup=main_menu_keyboard()
     )
