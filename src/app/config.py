@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     GEMINI_EMBEDDING_MODEL: str = "gemini-embedding-001"
 
     # RAG Settings
-    RAG_RELEVANCE_THRESHOLD: float = 0.75
+    RAG_RELEVANCE_THRESHOLD: float = 0.3  # Понижен порог для лучшего поиска
     RAG_TOP_K: int = 5
 
     # Project paths
@@ -33,3 +33,5 @@ class Settings(BaseSettings):
         case_sensitive = True
 
 settings = Settings()
+# Обновляем порог релевантности для более эффективной работы RAG
+settings.RAG_RELEVANCE_THRESHOLD = 0.3

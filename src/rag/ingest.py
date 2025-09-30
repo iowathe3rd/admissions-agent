@@ -67,16 +67,32 @@ def load_seed_data() -> List[Dict[str, Any]]:
     return successful_docs
 
 def chunk_text(text: str, chunk_size: int = 800, overlap: int = 100) -> List[str]:
-    """Basic text chunking based on character count."""
+    """Улучшенное разбиение текста на чанки с учетом структуры."""
     if len(text) <= chunk_size:
         return [text]
     
     chunks = []
     start = 0
+    
     while start < len(text):
-        end = start + chunk_size
-        chunks.append(text[start:end])
-        start += chunk_size - overlap
+        end = min(start + chunk_size, len(text))
+        
+        # Если не последний чанк, ищем подходящее место для разреза
+        if end < len(text):
+            # Ищем ближайший конец предложения, абзаца или другой разделитель
+            for delimiter in ['\n\n', '\n', '. ', '! ', '? ', ': ', '; ']:
+                delimiter_pos = text.rfind(delimiter, start, end)
+                if delimiter_pos > start + chunk_size // 2:  # Минимум половина чанка
+                    end = delimiter_pos + len(delimiter)
+                    break
+        
+        chunk = text[start:end].strip()
+        if chunk:  # Добавляем только непустые чанки
+            chunks.append(chunk)
+        
+        start = max(start + chunk_size - overlap, end)
+    
+    logger.info(f"Текст длиной {len(text)} символов разбит на {len(chunks)} чанков")
     return chunks
 
 async def ingest_data():

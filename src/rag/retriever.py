@@ -12,17 +12,44 @@ logger = logging.getLogger(__name__)
 
 # Инициализируем ChromaDB клиент
 # Предполагается, что индекс уже создан скриптом ingest.py
-try:
-    client = chromadb.PersistentClient(path=str(settings.INDEX_DIR))
-    collection = client.get_collection(name="admissions_docs")
-    logger.info("ChromaDB клиент инициализирован успешно")
-except Exception as e:
-    logger.error(f"Ошибка инициализации ChromaDB клиента или получения коллекции: {e}")
-    logger.error("Убедитесь, что запустили скрипт индексации первым.")
-    collection = None
+client = None
+collection = None
+
+def get_collection():
+    """Получает коллекцию ChromaDB с повторными попытками"""
+    global client, collection
+    
+    if collection is not None:
+        return collection
+        
+    try:
+        if client is None:
+            client = chromadb.PersistentClient(path=str(settings.INDEX_DIR))
+        
+        collection = client.get_collection(name="admissions_docs")
+        logger.info(f"ChromaDB коллекция получена успешно: {collection.count()} документов")
+        return collection
+        
+    except Exception as e:
+        logger.error(f"Ошибка получения ChromaDB коллекции: {e}")
+        
+        # Пытаемся получить или создать коллекцию
+        try:
+            if client is None:
+                client = chromadb.PersistentClient(path=str(settings.INDEX_DIR))
+            
+            collection = client.get_or_create_collection(name="admissions_docs")
+            logger.info(f"ChromaDB коллекция создана/получена: {collection.count()} документов")
+            return collection
+            
+        except Exception as e2:
+            logger.error(f"Критическая ошибка ChromaDB: {e2}")
+            return None
 
 def retrieve_context(query: str) -> List[RAGContext]:
     """Получает релевантный контекст из векторного хранилища на основе запроса."""
+    collection = get_collection()
+    
     if not collection:
         logger.warning("ChromaDB коллекция недоступна")
         return []
@@ -82,7 +109,15 @@ def retrieve_context(query: str) -> List[RAGContext]:
                             score=similarity
                         ))
                     
-        logger.info(f"Найдено {len(contexts)} релевантных контекстов для запроса: {query[:50]}...")
+        logger.info(f"Найдено {len(contexts)} релевантных контекстов для запроса: '{query[:50]}{'...' if len(query) > 50 else ''}'")
+        
+        # Логируем статистику релевантности
+        if contexts:
+            max_score = max(ctx.score for ctx in contexts)
+            min_score = min(ctx.score for ctx in contexts)
+            avg_score = sum(ctx.score for ctx in contexts) / len(contexts)
+            logger.info(f"Релевантность: мин={min_score:.3f}, макс={max_score:.3f}, сред={avg_score:.3f}")
+        
         return contexts
     
     except Exception as e:

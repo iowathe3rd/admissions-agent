@@ -89,14 +89,19 @@ def embed_texts(texts: List[str], model: str = settings.GEMINI_EMBEDDING_MODEL) 
             return []
             
         embeddings = []
-        for e in r.embeddings:
+        for i, e in enumerate(r.embeddings):
             if e and e.values:
                 embeddings.append(e.values)
+                # Проверяем качество векторизации
+                if len(e.values) == 0:
+                    logger.warning(f"Пустой вектор для текста {i}")
+                elif all(v == 0 for v in e.values):
+                    logger.warning(f"Нулевой вектор для текста {i}")
             else:
-                logger.warning("Получен пустой эмбеддинг")
+                logger.warning(f"Получен пустой эмбеддинг для текста {i}")
                 embeddings.append([])
         
-        logger.info(f"Успешно получено {len(embeddings)} эмбеддингов")
+        logger.info(f"Успешно получено {len([e for e in embeddings if e])} качественных эмбеддингов из {len(embeddings)}")
         return embeddings
         
     except Exception as e:

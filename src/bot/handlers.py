@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 async def safe_answer(callback: CallbackQuery, text: str, **kwargs):
     """Безопасная отправка ответа через callback."""
     if callback.message:
-        await safe_answer(callback, text, **kwargs)
+        await callback.message.answer(text, **kwargs)
 
 
 @router.message(Command("start"))
