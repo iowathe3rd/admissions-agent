@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import Optional
 
 from aiogram import F, Router
 from aiogram.filters import Command
@@ -16,6 +17,11 @@ from .keyboards import back_to_menu_keyboard, main_menu_keyboard
 
 router = Router()
 logger = logging.getLogger(__name__)
+
+async def safe_answer(callback: CallbackQuery, text: str, **kwargs):
+    """Безопасная отправка ответа через callback."""
+    if callback.message:
+        await callback.message.answer(text, **kwargs)
 
 
 @router.message(Command("start"))
@@ -82,7 +88,7 @@ async def show_programs_handler(callback: CallbackQuery):
             result = await session.execute(select(models.Program).order_by(models.Program.name))
             programs = result.scalars().all()
             if not programs:
-                await callback.message.answer("Информация о программах пока не добавлена.")
+                await safe_answer(callback, "Информация о программах пока не добавлена.")
             else:
                 response_text = "🎓 **Наши программы:**\n\n"
                 for p in programs:
@@ -92,10 +98,10 @@ async def show_programs_handler(callback: CallbackQuery):
                         response_text += f"  _{p.description}_\n\n"
                     else:
                         response_text += "\n"
-                await callback.message.answer(response_text, parse_mode="Markdown", reply_markup=back_to_menu_keyboard())
+                await safe_answer(callback, response_text, parse_mode="Markdown", reply_markup=back_to_menu_keyboard())
     except Exception as e:
         logger.error(f"Ошибка при получении программ: {e}")
-        await callback.message.answer(
+        await safe_answer(callback, 
             "Произошла ошибка при получении информации о программах. Попробуйте позже.",
             reply_markup=back_to_menu_keyboard()
         )

@@ -34,10 +34,11 @@ def retrieve_context(query: str) -> List[RAGContext]:
 
         # 2. Запрашиваем коллекцию
         try:
+            # ChromaDB принимает первый элемент списка эмбеддингов
             results = collection.query(
-                query_embeddings=query_embedding,
+                query_embeddings=query_embedding[0] if query_embedding else [],
                 n_results=settings.RAG_TOP_K,
-                include=["documents", "metadatas", "distances"]
+                include=["documents", "metadatas", "distances"]  # type: ignore
             )
         except Exception as e:
             logger.error(f"Ошибка при запросе к ChromaDB: {e}")
