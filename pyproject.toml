@@ -20,6 +20,10 @@ google-genai = "^0.8.0"
 chromadb = "^0.5.0"
 python-dotenv = "^1.0.1"
 aiosqlite = "^0.20.0"
+# Дополнительные зависимости для исправления ошибок
+numpy = "^1.24.0"
+typing-extensions = "^4.8.0"
+pathlib = {version = "*", python = ">=3.4"}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.1"
@@ -28,6 +32,9 @@ ruff = "^0.4.4"
 httpx = "^0.27.0"
 black = "^24.4.2"
 isort = "^5.13.2"
+# Дополнительные dev-зависимости
+mypy = "^1.0.0"
+pre-commit = "^3.0.0"
 
 [build-system]
 requires = ["poetry-core"]
