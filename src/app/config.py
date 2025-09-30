@@ -1,11 +1,17 @@
 import os
+
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
 
 load_dotenv()
 
 class Settings(BaseSettings):
+    # Bot Settings
+    BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
     TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    
+    # Google AI Settings  
+    GOOGLE_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
 
     # LLM Model IDs
@@ -20,7 +26,7 @@ class Settings(BaseSettings):
 
     # Project paths
     ROOT_DIR: str = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    DATA_DIR: str = os.path.join(ROOT_DIR, "src", "data", "seed")
+    DATA_DIR: str = os.path.join(ROOT_DIR, "data")
     INDEX_DIR: str = os.path.join(ROOT_DIR, "src", "rag", "index")
 
     class Config:

@@ -21,10 +21,12 @@ except ImportError:
 
 try:
     from docx import Document as DocxDocument
+    import docx
     DOCX_AVAILABLE = True
 except ImportError:
     DOCX_AVAILABLE = False
     DocxDocument = None  # type: ignore
+    docx = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -167,7 +169,7 @@ class DocumentLoader:
             text_parts: List[str] = []
             
             with open(file_path, 'rb') as f:
-                pdf_reader = PdfReader(f)  # type: ignore
+                pdf_reader = PyPDF2.PdfReader(f)  # type: ignore
                 
                 if len(pdf_reader.pages) == 0:
                     return [LoaderResult(
@@ -210,7 +212,7 @@ class DocumentLoader:
     
     def load_docx_file(self, file_path: Path) -> List[LoaderResult]:
         """Загружает DOCX файл."""
-        if not DOCX_AVAILABLE or DocxDocument is None:
+        if not DOCX_AVAILABLE or docx is None:
             error_msg = "python-docx не установлен. Установите: pip install python-docx"
             logger.error(error_msg)
             return [LoaderResult(source=file_path.stem, text="", success=False, error=error_msg)]
@@ -218,7 +220,7 @@ class DocumentLoader:
         try:
             logger.info(f"Обрабатываем DOCX файл: {file_path.name}")
             
-            doc = DocxDocument(str(file_path))  # type: ignore
+            doc = docx.Document(file_path)  # type: ignore
             
             text_parts: List[str] = []
             

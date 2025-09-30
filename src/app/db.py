@@ -17,6 +17,9 @@ async def init_db():
         # For this MVP, we'll create tables directly.
         await conn.run_sync(Base.metadata.create_all)
 
+# Alias for consistency
+init_database = init_db
+
 async def get_db():
     async with AsyncSessionLocal() as session:
         yield session

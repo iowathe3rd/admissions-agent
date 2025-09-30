@@ -166,6 +166,19 @@ async def ingest_data():
         logger.error(f"Ошибка при добавлении в ChromaDB: {e}")
         return
 
+# Алиас для обратной совместимости
+ingest_documents = ingest_data
+
+async def ingest_documents_from_directory(directory_path: str):
+    """Индексирует документы из указанной директории"""
+    # Временно изменяем DATA_DIR для загрузки из указанной папки
+    original_data_dir = settings.DATA_DIR
+    settings.DATA_DIR = directory_path
+    try:
+        await ingest_data()
+    finally:
+        settings.DATA_DIR = original_data_dir
+
 if __name__ == "__main__":
     # Это позволяет запускать скрипт напрямую для заполнения БД
     # Пример: python -m src.rag.ingest
