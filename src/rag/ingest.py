@@ -98,9 +98,6 @@ async def ingest_data():
     if not collection:
         logger.error("Не удалось создать коллекцию")
         return
-            collection = client.get_or_create_collection(name="admissions_docs")
-    except Exception as e:
-        logger.warning(f"Ошибка при проверке коллекции: {e}")
     
     # 1. Загружаем данные
     docs = load_seed_data()
