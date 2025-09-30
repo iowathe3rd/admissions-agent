@@ -7,6 +7,7 @@ import logging
 
 from app.config import settings
 from .genai import embed_texts
+from .document_loader import DocumentLoader, LoaderResult
 from app.db import init_db
 
 # Настройка логирования
@@ -29,8 +30,7 @@ except Exception as e:
 collection = client.get_or_create_collection(name="admissions_docs")
 
 def load_seed_data() -> List[Dict[str, Any]]:
-    """Загружает все .json файлы из директории seed данных."""
-    all_docs = []
+    """Загружает все поддерживаемые файлы из директории seed данных."""
     data_path = Path(settings.DATA_DIR)
     
     if not data_path.exists():
@@ -39,22 +39,32 @@ def load_seed_data() -> List[Dict[str, Any]]:
     
     logger.info(f"Загружаем данные из директории: {data_path}")
     
-    for json_file in data_path.glob("*.json"):
-        try:
-            logger.info(f"Обрабатываем файл: {json_file.name}")
-            with open(json_file, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                source_name = json_file.stem
-                for item in data:
-                    # Простое текстовое представление
-                    text = " ".join(f"{k}: {v}" for k, v in item.items())
-                    all_docs.append({"source": source_name, "text": text})
-        except Exception as e:
-            logger.error(f"Ошибка при загрузке файла {json_file}: {e}")
-            continue
+    # Инициализируем загрузчик документов
+    loader = DocumentLoader(encoding='utf-8')
     
-    logger.info(f"Загружено {len(all_docs)} документов из {len(list(data_path.glob('*.json')))} файлов")
-    return all_docs
+    # Загружаем все поддерживаемые файлы
+    results = loader.load_directory(data_path)
+    
+    # Получаем статистику
+    stats = loader.get_statistics(results)
+    logger.info(f"Статистика загрузки: {stats}")
+    
+    # Если есть ошибки, выводим их
+    if stats['errors']:
+        logger.warning("Ошибки при загрузке файлов:")
+        for error in stats['errors']:
+            logger.warning(f"  {error['source']}: {error['error']}")
+    
+    # Преобразуем успешные результаты в формат для дальнейшей обработки
+    successful_docs = []
+    for result in results:
+        if result.success and result.text.strip():
+            successful_docs.append(result.to_dict())
+    
+    logger.info(f"Готово к индексации: {len(successful_docs)} документов")
+    logger.info(f"Поддерживаемые форматы: JSON, TXT, PDF, DOCX")
+    
+    return successful_docs
 
 def chunk_text(text: str, chunk_size: int = 800, overlap: int = 100) -> List[str]:
     """Basic text chunking based on character count."""
