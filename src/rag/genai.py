@@ -2,7 +2,9 @@ import google.genai as genai
 from typing import List
 import logging
 
-from app.config import settings
+from app.config import Settings
+
+settings = Settings()
 
 logger = logging.getLogger(__name__)
 
