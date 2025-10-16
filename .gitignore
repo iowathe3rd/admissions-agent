@@ -86,3 +86,17 @@ target/
 wheelhouse/
 
 .env
+
+# Secrets
+.secrets/
+
+# Database files
+*.db
+*.sqlite3
+
+# Diagnostic reports (temporary files)
+*DIAGNOSIS_REPORT.md
+*FIXED_ISSUES_REPORT.md
+*RAG_ANALYSIS_REPORT.md
+telegram_bot_diagnostics.py
+rag_diagnostics.py

@@ -8,7 +8,7 @@ Telegram-бот для приемной комиссии университет�
 
 - Python 3.10+
 - Telegram Bot Token (получить от [@BotFather](https://t.me/botfather))
-- Google AI API Key (получить в [Google AI Studio](https://makersuite.google.com/app/apikey))
+- Google AI API Key или JSON Credentials (получить в [Google AI Studio](https://makersuite.google.com/app/apikey) или настроить сервисный аккаунт в Google Cloud Console)
 
 ### Установка и запуск
 
@@ -44,10 +44,18 @@ python start.py
 
 ```env
 # Telegram Bot
-BOT_TOKEN=your_telegram_bot_token_here
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
 
-# Google AI
-GOOGLE_API_KEY=your_google_ai_api_key_here
+# Google AI (один из вариантов аутентификации)
+# Вариант 1: API Key (получить в Google AI Studio)
+GEMINI_API_KEY=your_google_ai_api_key_here
+
+# Вариант 2: JSON Credentials (путь к файлу учетных данных сервисного аккаунта)
+# GOOGLE_CREDENTIALS_PATH=.secrets/google-credentials.json
+
+# Настройки для Vertex AI (требуются при использовании JSON credentials)
+# GOOGLE_CLOUD_PROJECT=your-project-id
+# GOOGLE_CLOUD_LOCATION=us-central1
 
 # База данных (SQLite по умолчанию)
 DATABASE_URL=sqlite+aiosqlite:///./admissions.db

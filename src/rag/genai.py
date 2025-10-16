@@ -1,20 +1,48 @@
 import google.genai as genai
 from typing import List
 import logging
+import os
+from pathlib import Path
 
-from app.config import Settings
+from ..app.config import Settings
 
 settings = Settings()
 
 logger = logging.getLogger(__name__)
 
-# Настраиваем клиент
+# Настраиваем клиент - сначала пробуем с JSON credentials, затем с API key
+client = None
 try:
-    client = genai.Client(api_key=settings.GEMINI_API_KEY)
-    logger.info("Gemini клиент инициализирован успешно")
+    # Проверяем, есть ли путь к JSON credentials
+    if settings.GOOGLE_CREDENTIALS_PATH and Path(settings.GOOGLE_CREDENTIALS_PATH).exists():
+        # Устанавливаем переменную окружения для использования JSON credentials
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = settings.GOOGLE_CREDENTIALS_PATH
+        
+        # Используем Vertex AI с JSON credentials
+        # Проверяем, что проект и локация заданы
+        if not settings.GOOGLE_CLOUD_PROJECT:
+            logger.warning("GOOGLE_CLOUD_PROJECT не задан в настройках, использую 'your-project-id'")
+            project_id = "your-project-id"  # Пользователь должен заменить на свой реальный ID проекта
+        else:
+            project_id = settings.GOOGLE_CLOUD_PROJECT
+            
+        location = settings.GOOGLE_CLOUD_LOCATION
+        
+        client = genai.Client(
+            vertexai=True,
+            project=project_id,
+            location=location
+        )
+        logger.info("Gemini клиент инициализирован с JSON credentials")
+    elif settings.GEMINI_API_KEY:
+        # Резервный вариант: используем API key
+        client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        logger.info("Gemini клиент инициализирован с API key")
+    else:
+        logger.error("Не найдены ни JSON credentials, ни API key для Gemini")
+        
 except Exception as e:
     logger.error(f"Ошибка инициализации Gemini клиента: {e}")
-    # В реальном приложении стоит обрабатывать это более изящно
     client = None
 
 # --- Prompt Templates ---

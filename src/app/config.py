@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
@@ -11,8 +12,18 @@ class Settings(BaseSettings):
     TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
     
     # Google AI Settings  
-    GOOGLE_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    # For backward compatibility, still support API key
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    
+    # New: Service account credentials path
+    GOOGLE_CREDENTIALS_PATH: str = os.getenv(
+        "GOOGLE_CREDENTIALS_PATH", 
+        str(Path(__file__).parent.parent.parent / ".secrets" / "google-credentials.json")
+    )
+    
+    # Google Cloud Project settings (required for Vertex AI)
+    GOOGLE_CLOUD_PROJECT: str = os.getenv("GOOGLE_CLOUD_PROJECT", "")
+    GOOGLE_CLOUD_LOCATION: str = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
 
     # LLM Model IDs
     GEMINI_DEFAULT_MODEL: str = "gemini-2.5-flash"

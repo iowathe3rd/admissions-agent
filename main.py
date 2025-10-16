@@ -40,9 +40,18 @@ async def main():
         logger.error("❌ BOT_TOKEN не установлен в .env файле")
         sys.exit(1)
     
-    if not settings.GOOGLE_API_KEY:
-        logger.error("❌ GOOGLE_API_KEY не установлен в .env файле")
+    # Проверяем, что есть либо API ключ, либо путь к JSON credentials
+    has_api_key = bool(settings.GEMINI_API_KEY)
+    has_credentials = bool(settings.GOOGLE_CREDENTIALS_PATH) and Path(settings.GOOGLE_CREDENTIALS_PATH).exists()
+    
+    if not has_api_key and not has_credentials:
+        logger.error("❌ Не найдены ни GEMINI_API_KEY, ни действительные JSON credentials (GOOGLE_CREDENTIALS_PATH)")
+        logger.error("📋 Убедитесь, что в .env файле установлен хотя бы один вариант аутентификации:")
+        logger.error("   - GEMINI_API_KEY=ваш_ключ_или")
+        logger.error("   - GOOGLE_CREDENTIALS_PATH=путь_к_файлу_json_credentials")
         sys.exit(1)
+        
+    logger.info("✅ Токены бота и аутентификация Google AI настроены")
     
     try:
         # 1. Инициализация базы данных
