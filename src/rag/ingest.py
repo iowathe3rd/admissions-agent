@@ -5,10 +5,10 @@ from typing import List, Dict, Any
 import asyncio
 import logging
 
-from app.config import settings
+from src.app.config import settings
 from .genai import embed_texts
 from .document_loader import DocumentLoader, LoaderResult
-from app.db import init_db
+from ..app.db import init_db
 
 # Настройка логирования
 logging.basicConfig(
@@ -20,7 +20,11 @@ logger = logging.getLogger(__name__)
 # Инициализируем ChromaDB клиент
 # Это создаст директорию, если её не существует, и сохранит данные.
 try:
-    client = chromadb.PersistentClient(path=str(settings.INDEX_DIR))
+    # Отключаем анонимную телеметрию ChromaDB, чтобы избежать ошибок с PostHog
+    import chromadb
+    chromadb.logger.setLevel(logging.ERROR)  # Отключаем логирование телеметрии
+    
+    client = chromadb.PersistentClient(path=str(settings.INDEX_DIR), settings=chromadb.Settings(anonymized_telemetry=False))
     logger.info(f"ChromaDB клиент инициализирован с путем: {settings.INDEX_DIR}")
 except Exception as e:
     logger.error(f"Ошибка инициализации ChromaDB: {e}")

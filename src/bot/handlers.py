@@ -12,6 +12,7 @@ from app import models
 from app.db import AsyncSessionLocal
 from src.rag.genai import llm_answer
 from src.rag.retriever import construct_prompt, retrieve_context
+from app.config import settings
 
 from .keyboards import back_to_menu_keyboard, main_menu_keyboard
 
@@ -21,7 +22,10 @@ logger = logging.getLogger(__name__)
 async def safe_answer(callback: CallbackQuery, text: str, **kwargs):
     """Безопасная отправка ответа через callback."""
     if callback.message:
-        await callback.message.answer(text, **kwargs)
+        try:
+            await callback.message.answer(text, **kwargs)
+        except Exception as e:
+            logger.error(f"Ошибка при отправке ответа в callback: {e}")
 
 
 @router.message(Command("start"))
@@ -241,10 +245,15 @@ async def rag_answer_handler(message: Message):
                     select(models.Candidate).filter(models.Candidate.telegram_id == message.from_user.id)
                 )
                 candidate = result.scalars().first()
+                
                 if not candidate:
+                    # Собираем полное имя пользователя из first_name и last_name
+                    full_name_parts = [message.from_user.first_name or "", message.from_user.last_name or ""]
+                    full_name = " ".join(filter(None, full_name_parts)) or f"Пользователь {message.from_user.id}"
+                    
                     candidate = models.Candidate(
                         telegram_id=message.from_user.id,
-                        full_name=message.from_user.full_name
+                        full_name=full_name
                     )
                     session.add(candidate)
                     await session.flush()  # Флашируем для получения ID кандидата

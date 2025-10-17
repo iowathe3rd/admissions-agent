@@ -1,5 +1,5 @@
 import logging
-from typing import List
+from typing import List, Optional
 
 import chromadb
 
@@ -57,17 +57,16 @@ def retrieve_context(query: str) -> List[RAGContext]:
     try:
         # 1. Векторизуем запрос пользователя
         query_embedding = embed_texts([query])
-        if not query_embedding:
+        if not query_embedding or len(query_embedding) == 0:
             logger.error("Не удалось векторизовать запрос")
             return []
 
         # 2. Запрашиваем коллекцию
         try:
-            # ChromaDB принимает первый элемент списка эмбеддингов
             results = collection.query(
-                query_embeddings=query_embedding[0] if query_embedding else [],
+                query_embeddings=query_embedding[0],
                 n_results=settings.RAG_TOP_K,
-                include=["documents", "metadatas", "distances"]  # type: ignore
+                include=["documents", "metadatas", "distances"]
             )
         except Exception as e:
             logger.error(f"Ошибка при запросе к ChromaDB: {e}")
@@ -75,47 +74,43 @@ def retrieve_context(query: str) -> List[RAGContext]:
 
         # 3. Фильтруем и форматируем результаты
         contexts = []
-        if results and results.get("ids"):
-            ids_list = results["ids"]
-            if ids_list and len(ids_list) > 0 and ids_list[0]:
-                for i in range(len(ids_list[0])):
-                    # Безопасное получение distance
-                    distance = 1.0
-                    distances = results.get("distances")
-                    if distances and len(distances) > 0 and distances[0] and len(distances[0]) > i:
-                        distance = distances[0][i]
-                    
-                    # Chroma использует косинусное расстояние, поэтому 1 - distance = косинусное сходство
-                    similarity = 1 - distance
+        if results and results.get("ids") and results["ids"][0]:
+            for i in range(len(results["ids"][0])):
+                # Безопасное получение distance
+                distance = 1.0
+                if i < len(results.get("distances", [[]])[0]) if results.get("distances") else False:
+                    distance = results["distances"][0][i]
+                
+                # Chroma использует косинусное расстояние, поэтому 1 - distance = косинусное сходство
+                similarity = 1 - distance
 
-                    if similarity >= settings.RAG_RELEVANCE_THRESHOLD:
-                        # Безопасное получение metadata
-                        metadata = {}
-                        metadatas = results.get("metadatas")
-                        if metadatas and len(metadatas) > 0 and metadatas[0] and len(metadatas[0]) > i:
-                            metadata = metadatas[0][i] or {}
-                        
-                        source = str(metadata.get("source", "unknown"))
-                        
-                        # Безопасное получение текста документа
-                        text = ""
-                        documents = results.get("documents")
-                        if documents and len(documents) > 0 and documents[0] and len(documents[0]) > i:
-                            text = documents[0][i] or ""
+                if similarity >= settings.RAG_RELEVANCE_THRESHOLD:
+                    # Безопасное получение metadata
+                    metadata = {}
+                    if i < len(results.get("metadatas", [[]])[0]) if results.get("metadatas") else False:
+                        metadata = results["metadatas"][0][i] or {}
                     
-                        contexts.append(RAGContext(
-                            source=source,
-                            text=text,
-                            score=similarity
-                        ))
+                    source = str(metadata.get("source", "unknown"))
                     
+                    # Безопасное получение текста документа
+                    text = ""
+                    if i < len(results.get("documents", [[]])[0]) if results.get("documents") else False:
+                        text = results["documents"][0][i] or ""
+                
+                    contexts.append(RAGContext(
+                        source=source,
+                        text=text,
+                        score=similarity
+                    ))
+                
         logger.info(f"Найдено {len(contexts)} релевантных контекстов для запроса: '{query[:50]}{'...' if len(query) > 50 else ''}'")
         
         # Логируем статистику релевантности
         if contexts:
-            max_score = max(ctx.score for ctx in contexts)
-            min_score = min(ctx.score for ctx in contexts)
-            avg_score = sum(ctx.score for ctx in contexts) / len(contexts)
+            scores = [ctx.score for ctx in contexts]
+            max_score = max(scores)
+            min_score = min(scores)
+            avg_score = sum(scores) / len(scores)
             logger.info(f"Релевантность: мин={min_score:.3f}, макс={max_score:.3f}, сред={avg_score:.3f}")
         
         return contexts
@@ -132,7 +127,4 @@ def construct_prompt(user_question: str, contexts: List[RAGContext]) -> str:
     else:
         context_str = "\n---\n".join([f"Источник: {c.source}\nСодержание: {c.text}\nРелевантность: {c.score:.3f}" for c in contexts])
 
-    prompt = USER_PROMPT_TEMPLATE.replace("{{user_question}}", user_question)
-    prompt = prompt.replace("{{context_chunks_with_sources}}", context_str)
-    
-    return prompt
+    return USER_PROMPT_TEMPLATE.format(user_question=user_question, context_chunks_with_sources=context_str)

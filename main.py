@@ -36,8 +36,8 @@ async def main():
         logger.error("📋 Убедитесь что .env файл настроен корректно")
         sys.exit(1)
     
-    if not settings.BOT_TOKEN:
-        logger.error("❌ BOT_TOKEN не установлен в .env файле")
+    if not settings.TELEGRAM_BOT_TOKEN:
+        logger.error("❌ TELEGRAM_BOT_TOKEN не установлен в .env файле")
         sys.exit(1)
     
     # Проверяем, что есть либо API ключ, либо путь к JSON credentials

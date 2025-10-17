@@ -1,12 +1,10 @@
 import google.genai as genai
-from typing import List
+from typing import List, Optional
 import logging
 import os
 from pathlib import Path
 
-from ..app.config import Settings
-
-settings = Settings()
+from ..app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +19,7 @@ try:
         # Используем Vertex AI с JSON credentials
         # Проверяем, что проект и локация заданы
         if not settings.GOOGLE_CLOUD_PROJECT:
-            logger.warning("GOOGLE_CLOUD_PROJECT не задан в настройках, использую 'your-project-id'")
+            logger.warning("GOOGLE_CLOUD_PROJECT не задан в настройках. Пожалуйста, укажите его в настройках.")
             project_id = "your-project-id"  # Пользователь должен заменить на свой реальный ID проекта
         else:
             project_id = settings.GOOGLE_CLOUD_PROJECT
@@ -47,8 +45,7 @@ except Exception as e:
 
 # --- Prompt Templates ---
 
-SYSTEM_PROMPT = """
-Ты — ассистент приёмной комиссии ALT University.
+SYSTEM_PROMPT = """Ты — ассистент приёмной комиссии ALT University.
 
 ПРАВИЛА ОТВЕТОВ:
 1. Отвечай коротко, точно и дружелюбно на русском языке
@@ -58,22 +55,20 @@ SYSTEM_PROMPT = """
 5. Цифры, даты и суммы пиши точно как в КОНТЕКСТЕ
 6. В конце ответа предлагай дополнительную помощь или переход к другим разделам
 
-СТИЛЬ: Профессиональный, но дружелюбный. Используй эмодзи умеренно.
-"""
+СТИЛЬ: Профессиональный, но дружелюбный. Используй эмодзи умеренно."""
 
-USER_PROMPT_TEMPLATE = """
-ВОПРОС ПОЛЬЗОВАТЕЛЯ:
-{{user_question}}
+USER_PROMPT_TEMPLATE = """ВОПРОС ПОЛЬЗОВАТЕЛЯ:
+{user_question}
 
 КОНТЕКСТ ИЗ БАЗЫ ЗНАНИЙ:
-{{context_chunks_with_sources}}
+{context_chunks_with_sources}
 
 ЗАДАЧА:
 1) Ответь строго на основе КОНТЕКСТА; не придумывай информацию
 2) Если вопрос про программы/стоимость/сроки/документы — приведи конкретные данные из КОНТЕКСТА
 3) Если контекста недостаточно — предложи обратиться в приёмную комиссию
-4) В конце предложи дополнительную помощь или использование кнопок меню
-"""
+4) В конце предложи дополнительную помощь или использование кнопок меню"""
+
 
 # --- Core Functions ---
 
@@ -100,7 +95,8 @@ def llm_answer(prompt: str, model: str = settings.GEMINI_DEFAULT_MODEL) -> str:
     except Exception as e:
         # Базовая обработка ошибок
         logger.error(f"Ошибка при генерации ответа: {e}")
-        return f"Произошла ошибка при обработке запроса. Пожалуйста, попробуйте позже или обратитесь в приёмную комиссию."
+        return "Произошла ошибка при обработке запроса. Пожалуйста, попробуйте позже или обратитесь в приёмную комиссию."
+
 
 def embed_texts(texts: List[str], model: str = settings.GEMINI_EMBEDDING_MODEL) -> List[List[float]]:
     """Векторизует список текстов используя указанную модель эмбеддингов."""
@@ -108,6 +104,9 @@ def embed_texts(texts: List[str], model: str = settings.GEMINI_EMBEDDING_MODEL) 
         logger.error("Gemini клиент не инициализирован")
         return []
     
+    if not texts:
+        return []
+
     try:
         logger.info(f"Векторизация {len(texts)} текстов с помощью модели {model}")
         r = client.models.embed_content(model=model, contents=texts)

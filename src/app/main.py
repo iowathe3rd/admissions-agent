@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
 
+from app.config import settings
 from app.db import init_db
 from app.routers import programs, faqs, steps, documents, search
 from app.seed_data import load_seed_data_to_db
@@ -30,20 +31,26 @@ async def lifespan(app: FastAPI):
     # On shutdown
     logger.info("Завершение работы приложения.")
 
+# Create FastAPI app with configuration from settings
 app = FastAPI(
     title="Admissions Agent API",
     description="API for the Admissions Agent Telegram Bot",
     version="0.1.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    debug=settings.get('DEBUG', False)  # Use debug setting from config
 )
 
-# Добавляем CORS для возможности работы с фронтендом
+# Configure CORS based on environment settings
+allowed_origins = getattr(settings, 'ALLOWED_ORIGINS', ["*"])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # В продакшене следует указать конкретные домены
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    # Allow credentials only for specific origins in production
+    allow_origin_regex=getattr(settings, 'ALLOW_ORIGIN_REGEX', None)
 )
 
 @app.get("/healthz", tags=["Health"])

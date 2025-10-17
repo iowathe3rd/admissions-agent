@@ -13,10 +13,10 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
+
 def back_to_menu_keyboard() -> InlineKeyboardMarkup:
     """Создает клавиатуру с кнопкой возврата в главное меню."""
     buttons = [
         [InlineKeyboardButton(text="🔙 Вернуться в меню", callback_data="back_to_menu")]
     ]
-    return InlineKeyboardMarkup(inline_keyboard=buttons)
     return InlineKeyboardMarkup(inline_keyboard=buttons)
